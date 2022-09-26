@@ -18,14 +18,15 @@ import plotly.figure_factory as ff
 
 from colorama import Fore, Back, Style  #for formatting the output font of printed texts
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, precision_score,recall_score
 from mlxtend.plotting import plot_confusion_matrix
 from plotly.offline import plot, iplot, init_notebook_mode
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from statsmodels.formula.api import ols
 import plotly.graph_objs as gobj
-
+ 
+from imblearn.over_sampling import SMOTE
 import xgboost
 from sklearn.svm import SVC
 from sklearn.ensemble import GradientBoostingClassifier
@@ -73,6 +74,8 @@ y = data["DEATH_EVENT"]
 x_train,x_test,y_train,y_test = train_test_split(x,y, test_size=0.2, random_state=2)
 
 accuracy_dict = {}
+precision_dict = {}
+recall_dict = {}
 
 log_reg = LogisticRegression()
 log_reg.fit(x_train, y_train)
@@ -91,7 +94,7 @@ plt.yticks(range(2),["Heart Failure Absent",
 
 plt.xticks(range(2),["Heart Failure Absent", 
                      "Heart Failure Present"], fontsize = 10)
-
+print(classification_report(y_test,log_reg_pred))
 print(Back.WHITE + Fore.RED + "The logistic regression model has a 23.5% sensitivity and a specificity of 95.3%. It is able to detect those who do not have the condition, better than it detects those who have the condition.")
 
 
@@ -109,8 +112,13 @@ def model(arg):
     arg.fit(x_train, y_train)
     arg_pred = arg.predict(x_test)
     arg_acc = accuracy_score(y_test, arg_pred)
+    arg_prec = precision_score(y_test,arg_pred)
+    arg_rec = recall_score(y_test,arg_pred)
     accuracy_dict.update({'{}'.format(arg): 100*arg_acc})
-    return print(Fore.GREEN + "Accuracy of {} is : {:.2f}%".format(arg , 100* arg_acc))
+    precision_dict.update({'{}'.format(arg): 100*arg_prec})
+    recall_dict.update({'{}'.format(arg): 100*arg_rec})
+    
+    pass
 
 #Support Vector Machine
 svc = SVC()
@@ -146,3 +154,94 @@ cat = CatBoostClassifier()
 model(cat)
 
 print(accuracy_dict)
+
+#SMOTE: Synthetic Minority Oversampling Technique
+#SMOTE is an oversampling technique where the synthetic samples are generated for the minority class. 
+#This algorithm helps to overcome the overfitting problem posed by random oversampling.
+
+#Visualization of training data before sampling technique
+traindata = px.histogram(y_train, x= "DEATH_EVENT", text_auto=True)
+traindata.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset")
+traindata.show()
+
+#SMOTE
+smote = SMOTE(sampling_strategy = 'minority')
+x_train_SMOTE, y_train_SMOTE = smote.fit_resample(x_train,y_train)
+
+#Visualization of training data after sampling technique
+traindata_sampled = px.histogram(y_train_SMOTE, x= "DEATH_EVENT", text_auto=True)
+traindata_sampled.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset after Sampling")
+traindata_sampled.show()
+
+accuracy_dict_smote = {}
+precision_dict_smote = {}
+recall_dict_smote = {}
+
+def model_2(arg):
+    """ A modified version of the function "model" described above, Change is with using the training data 
+    sampled with SMOTE instead of the original training data.
+    Args:
+        arg: a variable that holds an instance of the function call of a specified machine learning model.
+        
+    Returns:
+        A printed statement stating the accuracy of the machine learning model in arg
+        
+    """
+    
+    arg.fit(x_train_SMOTE, y_train_SMOTE)
+    arg_pred = arg.predict(x_test)
+    arg_acc = accuracy_score(y_test, arg_pred)
+    arg_prec = precision_score(y_test,arg_pred)
+    arg_rec = recall_score(y_test,arg_pred)
+    accuracy_dict_smote.update({'{}'.format(arg): 100*arg_acc})
+    precision_dict_smote.update({'{}'.format(arg): 100*arg_prec})
+    recall_dict_smote.update({'{}'.format(arg): 100*arg_rec})
+    
+    pass
+   
+
+#Logistic Regression
+log_reg_2 = LogisticRegression()
+model_2(log_reg_2)
+
+#Support Vector Machine
+svc_2 = SVC()
+model_2(svc_2)
+
+#K Neighbours Classifier
+
+knn_2 = KNeighborsClassifier()
+model_2(knn_2)
+
+#Decision Tree Classifier
+dt_2 = DecisionTreeClassifier()
+model_2(dt_2) 
+
+#RandomForestClassifier
+r_2 = RandomForestClassifier()
+model_2(r_2)
+
+#GradientBoostingClassifier
+gb_2 = GradientBoostingClassifier()
+model_2(gb_2)
+
+#xgbrf (Extreme Gradient Boosting Random Forest Ensemble classifier
+xgb_2 = xgboost.XGBRFClassifier()
+model_2(xgb_2)
+
+#LGBM Classifier
+lgbm_2 = lgb.LGBMClassifier()
+model_2(lgbm_2)
+
+#Cat Boost Classifier
+cat_2 = CatBoostClassifier()
+model_2(cat_2)
+
+print("Accuracy dictionary for original training data: ", accuracy_dict)
+print("Precision dictionary for original training data: ", precision_dict)
+print("Recall dictionary for original training data: ", recall_dict)
+print("Accuracy dictionary for training data after SMOTE: ", accuracy_dict_smote)
+print("Precision dictionary for training data after SMOTE: ", precision_dict_smote)
+print("Recall dictionary for original training data: ", recall_dict_smote)
+
+#Next steps:compare the model characteristics (accuracy,precision,recall) when imbalance is corrected vs the previous versions via bar graphs
