@@ -80,10 +80,7 @@ recall_dict = {}
 log_reg = LogisticRegression()
 log_reg.fit(x_train, y_train)
 log_reg_pred = log_reg.predict(x_test)
-log_reg_acc = accuracy_score(y_test, log_reg_pred)
-accuracy_dict['log_reg'] = 100*log_reg_acc
 
-print(Fore.GREEN + "Accuracy of Logistic Regression is : ", "{:.2f}%".format(100* log_reg_acc))
 
 cm = confusion_matrix(y_test, log_reg_pred)
 plt.figure()
@@ -119,6 +116,11 @@ def model(arg):
     recall_dict.update({'{}'.format(arg): 100*arg_rec})
     
     pass
+
+#Logistic Regression
+
+log_reg = LogisticRegression()
+model(log_reg)
 
 #Support Vector Machine
 svc = SVC()
@@ -242,6 +244,32 @@ print("Precision dictionary for original training data: ", precision_dict)
 print("Recall dictionary for original training data: ", recall_dict)
 print("Accuracy dictionary for training data after SMOTE: ", accuracy_dict_smote)
 print("Precision dictionary for training data after SMOTE: ", precision_dict_smote)
-print("Recall dictionary for original training data: ", recall_dict_smote)
+print("Recall dictionary for training data after SMOTE: ", recall_dict_smote)
 
 #Next steps:compare the model characteristics (accuracy,precision,recall) when imbalance is corrected vs the previous versions via bar graphs
+
+#The following is just to create a dictionary of each model as the key and its metrics before and after SMOTE as the values
+indices = [0,1,2,3,4,5,6,7,8]
+dictlist = [accuracy_dict,precision_dict,recall_dict,accuracy_dict_smote,precision_dict_smote,recall_dict_smote]
+
+models = list(accuracy_dict.keys())
+
+val = []
+for item in dictlist:
+    val.append(list(item.values()))
+
+metrics = [[],[],[],[],[],[],[],[],[]]
+
+for ind in indices:
+    for it in val:
+        metrics[ind].append(it[ind])
+        
+model_dict = dict(zip(models,metrics)) 
+print(model_dict) #the metrics are in the order: accuracy, precision and recall. The first three items in the list of values
+#are the metrics before SMOTE, the last three are the metrics after SMOTE.
+
+
+#converting the dictionary into a dataframe for better visual exploration of models and their metrics. 
+df= pd.DataFrame.from_dict(model_dict, orient = 'index', columns= ["Accuracy with Raw Model","Precision with Raw Model","Recall with Raw Model",
+                                                                   "Accuracy after SMOTE","Precision after SMOTE","Recall after SMOTE"])
+df
