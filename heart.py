@@ -34,7 +34,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
-from catboost import CatBoostClassifier
+# from catboost import CatBoostClassifier
 
 data = pd.read_csv("C:/Users/pauli/Downloads/heart_failure_clinical_records_dataset.csv")
 
@@ -144,16 +144,16 @@ gb = GradientBoostingClassifier()
 model(gb)
 
 #xgbrf (Extreme Gradient Boosting Random Forest Ensemble classifier
-xgb = xgboost.XGBRFClassifier()
-model(xgb)
+# xgb = xgboost.XGBRFClassifier()
+# model(xgb)
 
-#LGBM Classifier
-lgbm = lgb.LGBMClassifier()
-model(lgbm)
+# #LGBM Classifier
+# lgbm = lgb.LGBMClassifier()
+# model(lgbm)
 
-#Cat Boost Classifier
-cat = CatBoostClassifier()
-model(cat)
+# #Cat Boost Classifier
+# cat = CatBoostClassifier()
+# model(cat)
 
 print(accuracy_dict)
 
@@ -228,16 +228,16 @@ gb_2 = GradientBoostingClassifier()
 model_2(gb_2)
 
 #xgbrf (Extreme Gradient Boosting Random Forest Ensemble classifier
-xgb_2 = xgboost.XGBRFClassifier()
-model_2(xgb_2)
+# xgb_2 = xgboost.XGBRFClassifier()
+# model_2(xgb_2)
 
-#LGBM Classifier
-lgbm_2 = lgb.LGBMClassifier()
-model_2(lgbm_2)
+# #LGBM Classifier
+# lgbm_2 = lgb.LGBMClassifier()
+# model_2(lgbm_2)
 
-#Cat Boost Classifier
-cat_2 = CatBoostClassifier()
-model_2(cat_2)
+# #Cat Boost Classifier
+# cat_2 = CatBoostClassifier()
+# model_2(cat_2)
 
 print("Accuracy dictionary for original training data: ", accuracy_dict)
 print("Precision dictionary for original training data: ", precision_dict)
@@ -249,7 +249,7 @@ print("Recall dictionary for training data after SMOTE: ", recall_dict_smote)
 #Next steps:compare the model characteristics (accuracy,precision,recall) when imbalance is corrected vs the previous versions via bar graphs
 
 #The following is just to create a dictionary of each model as the key and its metrics before and after SMOTE as the values
-indices = [0,1,2,3,4,5,6,7,8]
+indices = [0,1,2,3,4,5]
 dictlist = [accuracy_dict,precision_dict,recall_dict,accuracy_dict_smote,precision_dict_smote,recall_dict_smote]
 
 models = list(accuracy_dict.keys())
@@ -258,7 +258,7 @@ val = []
 for item in dictlist:
     val.append(list(item.values()))
 
-metrics = [[],[],[],[],[],[],[],[],[]]
+metrics = [[],[],[],[],[],[]]
 
 for ind in indices:
     for it in val:
@@ -272,4 +272,7 @@ print(model_dict) #the metrics are in the order: accuracy, precision and recall.
 #converting the dictionary into a dataframe for better visual exploration of models and their metrics. 
 df= pd.DataFrame.from_dict(model_dict, orient = 'index', columns= ["Accuracy with Raw Model","Precision with Raw Model","Recall with Raw Model",
                                                                    "Accuracy after SMOTE","Precision after SMOTE","Recall after SMOTE"])
-df
+df = df.reset_index(level=0)
+
+fig1 = px.bar(df, x= "index", y = "Accuracy with Raw Model", title = "Accuracy of the ML models, pre-SMOTE", labels = {'index':'ML models'})
+fig1.show()
