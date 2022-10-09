@@ -38,19 +38,22 @@ from sklearn.linear_model import LogisticRegression
 
 data = pd.read_csv("C:/Users/pauli/Downloads/heart_failure_clinical_records_dataset.csv")
 
-# Exploratory data analysis of outcome variable and age distribution
+# Exploratory data analysis of outcome variable and demographics
 print(data.head())
 print(data.shape)
 print(data.columns)
 print(data.info())
 print(data.describe())
 
+print(data['age'].describe())
+
+
 #We realize that the age range of the respondents is 40 to 95 years with an average of 60 years.
 
 
 df = data
 pio.renderers.default = "svg" #this option would allow plotly figures show inline in spyder
-
+df["DEATH_EVENT"].replace([0,1],["No", "Yes"], inplace = True)
 outcome = px.histogram(df, x= "DEATH_EVENT", text_auto=True)
 outcome.update_layout(bargap=0.5, title_text= "Count of Outcomes")
 outcome.show()
@@ -63,6 +66,12 @@ agedist.update_layout(title_text = 'Age Distribution of Dataset')
 
 agedist.show()
 
+
+
+gendist = df['sex'].value_counts().to_frame().reset_index(level=0)
+gendist.replace([1,0],["Male", "Female"], inplace = True)
+genfig = px.pie(gendist, values = 'sex', names='index', title  = "Gender Distribution of Dataset" )
+genfig.show()
 
 # Data Modelling with feature selection solely based on domain knowledge
 
@@ -274,5 +283,21 @@ df= pd.DataFrame.from_dict(model_dict, orient = 'index', columns= ["Accuracy wit
                                                                    "Accuracy after SMOTE","Precision after SMOTE","Recall after SMOTE"])
 df = df.reset_index(level=0)
 
-fig1 = px.bar(df, x= "index", y = "Accuracy with Raw Model", title = "Accuracy of the ML models, pre-SMOTE", labels = {'index':'ML models'})
+#Graphs of Model Metrics
+fig1 = px.bar(df, x= "index", y = "Accuracy with Raw Model", title = "Accuracy of the ML models, pre-SMOTE", labels = {'index':'ML models'}, text_auto=True)
 fig1.show()
+
+fig2 = px.bar(df, x= "index", y = "Accuracy after SMOTE", title = "Accuracy of the ML models, post-SMOTE", labels = {'index':'ML models'}, text_auto=True)
+fig2.show()
+
+fig3 = px.bar(df, x= "index", y = "Precision with Raw Model ", title = "Precision of the ML models, pre-SMOTE", labels = {'index':'ML models'}, text_auto=True)
+fig3.show()
+
+fig4 = px.bar(df, x= "index", y = "Precision after SMOTE", title = "Precision of the ML models, post-SMOTE", labels = {'index':'ML models'}, text_auto=True)
+fig4.show()
+
+fig5 = px.bar(df, x= "index", y = "Recall with Raw Model", title = "Recall of the ML models, pre-SMOTE", labels = {'index':'ML models'}, text_auto=True)
+fig5.show()
+
+fig6 = px.bar(df, x= "index", y = "Recall after SMOTE", title = "Recall of the ML models, post-SMOTE", labels = {'index':'ML models'}, text_auto=True)
+fig6.show()
