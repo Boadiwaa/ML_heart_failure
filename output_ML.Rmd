@@ -24,6 +24,7 @@ import lightgbm as lgb
 import plotly.figure_factory as ff
 
 from colorama import Fore, Back, Style  #for formatting the output font of printed texts
+from sklearn.feature_selection import VarianceThreshold
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, precision_score,recall_score
 from mlxtend.plotting import plot_confusion_matrix
@@ -74,15 +75,66 @@ agedist.update_layout(title_text = 'Age Distribution of Dataset')
 
 ```{python}
 df = data
-df["DEATH_EVENT"].replace([0,1],["No", "Yes"], inplace = True)
-outcome = px.histogram(df, x= "DEATH_EVENT", text_auto=True)
+df["Mortality"] =  np.where(df["DEATH_EVENT"] == 0, "No", "Yes")
+outcome = px.histogram(df, x= "Mortality", text_auto=True)
 outcome.update_layout(bargap=0.5, title_text= "Count of Outcomes")
 
 ```
+
+
 ```{python}
 gendist = df['sex'].value_counts().to_frame().reset_index(level=0)
 gendist.replace([1,0],["Male", "Female"], inplace = True)
 genfig = px.pie(gendist, values = 'sex', names='index', title  = "Gender Distribution of Dataset" )
 genfig.show()
 ```
+
+### Pre-selection of Features and Feature Engineering
+
+We are closer to our goal of comparing the performance of various ML models on the dataset. Features here are pre-selected based on domain knowledge. Next, some feature engineering with Synthetic Minority Oversampling Technique (SMOTE). SMOTE utilizes a k-nearest neighbour algorithm helps to overcome the overfitting problem posed by random oversampling.In our dataset, the proportion of "No" examples for our outcome variable is much higher than "Yes" examples. Thus, there is the danger of our ML algorithms being biased if trained on this data as they would have way more "No" examples to learn from. I chose SMOTE instead of Random undersampling of the majority class because I want to preserve the data and not eliminate any examples since I do not have much training data to begin with!
+
+```{python}
+Features = ['age','anaemia','creatinine_phosphokinase', 'diabetes',
+            'ejection_fraction', 'serum_sodium', 'high_blood_pressure','smoking']
+
+x = data[Features]
+y = data["DEATH_EVENT"]
+x_train,x_test,y_train,y_test = train_test_split(x,y, test_size=0.2, random_state=2)
+
+#Visualization of training data before sampling technique
+traindata = px.histogram(y_train, x= "DEATH_EVENT", text_auto=True)
+traindata.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset")
+
+```
+
+```{python}
+smote = SMOTE(sampling_strategy = 'minority')
+x_train_SMOTE, y_train_SMOTE = smote.fit_resample(x_train,y_train)
+
+#Visualization of training data after sampling technique
+traindata_sampled = px.histogram(y_train_SMOTE, x= "DEATH_EVENT", text_auto=True)
+traindata_sampled.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset after Sampling")
+
+```
+
+### Feature Selection
+
+First, we identify features with low variance since they would not help the model much in finding patterns and de-select them. We will also check if there is multicollinearity amongst any of the features and we de-select one per pair.
+
+```{python}
+var = VarianceThreshold(threshold = 0.05) # arbritary percentage of 5% for the minimum variance to be allowed. Thus features with a minimum of 95% similarity of values would be dropped.
+var.fit(x) 
+var.get_support()
+
+```
+From the results, per our threshold criteria, all the features have high variance (< 95% similarity amongst values).
+
+```{python}
+cor = x.corr() 
+cor
+sns.heatmap(cor)
+``` 
+There is no collinearity amongst the variables.
+
+
 
