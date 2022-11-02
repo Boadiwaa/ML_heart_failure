@@ -103,20 +103,19 @@ Features = ['age','anaemia','creatinine_phosphokinase', 'diabetes',
 
 x = data[Features]
 y = data["DEATH_EVENT"]
-x_train,x_test,y_train,y_test = train_test_split(x,y, test_size=0.2, random_state=2)
 
 #Visualization of training data before sampling technique
-traindata = px.histogram(y_train, x= "DEATH_EVENT", text_auto=True)
+traindata = px.histogram(y, x= "DEATH_EVENT", text_auto=True)
 traindata.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset")
 
 ```
 
 ```{python}
 smote = SMOTE(sampling_strategy = 'minority')
-x_train_SMOTE, y_train_SMOTE = smote.fit_resample(x_train,y_train)
+x_SMOTE, y_SMOTE = smote.fit_resample(x,y)
 
 #Visualization of training data after sampling technique
-traindata_sampled = px.histogram(y_train_SMOTE, x= "DEATH_EVENT", text_auto=True)
+traindata_sampled = px.histogram(y_SMOTE, x= "DEATH_EVENT", text_auto=True)
 traindata_sampled.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset after Sampling")
 
 ```
@@ -126,15 +125,15 @@ traindata_sampled.update_layout(bargap=0.5, title_text= "Count of Outcomes for T
 First, we identify features with low variance since they would not help the model much in finding patterns and de-select them. We will also check if there is multicollinearity amongst any of the features and we de-select one per pair.
 
 ```{python}
-var = VarianceThreshold(threshold = 0.05) # arbritary percentage of 5% for the minimum variance to be allowed. Thus features with a minimum of 95% similarity of values would be dropped.
-var.fit(x) 
+var = VarianceThreshold(threshold = 0.15) # arbritary percentage of 15% for the minimum variance to be allowed. Thus features with values sharing a similarity of 85% and above  would be dropped.
+var.fit(x_SMOTE) 
 var.get_support()
 
 ```
-From the results, per our threshold criteria, all the features have high variance (< 95% similarity amongst values).
+From the results, per our threshold criteria, all the features have high variance (< 85% similarity amongst values).
 
 ```{python}
-cor = x.corr() 
+cor = x_SMOTE.corr() 
 cor
 sns.heatmap(cor)
 ``` 
@@ -146,12 +145,129 @@ Now, we're going to use SequentialFeatureSelector(SFS) from the mlxtend library,
 ```{python}
 sfs = SFS(LogisticRegression(max_iter = 1000), #the default max_iter of 100 was not enough for the algorithm to converge
           k_features= 'best', 
-          forward=True, 
+          forward= True, 
           scoring = 'accuracy')
           
-sfs.fit(x,y)
+sfs.fit(x_SMOTE,y_SMOTE)
 sfs.k_feature_names_
 
 ```
+Let's do a little experiment and see which features are selected when we use the raw data before SMOTE was applied:
 
+```{python}
+sfs2 = sfs
+sfs2.fit(x, y)
+sfs2.k_feature_names_
+
+```
+
+The results are different. We see the importance of data pre-processing and feature engineering before rushing ahead with machine learning.
+
+We will go with the features selected from the SMOTE-transformed data.
+
+```{python}
+
+x_SMOTE  = x_SMOTE[list(sfs.k_feature_names_)]
+
+x_train,x_test,y_train,y_test = train_test_split(x_SMOTE,y_SMOTE, test_size=0.2, random_state=2)
+accuracy_dict = {}
+precision_dict = {}
+recall_dict = {}
+
+def model(arg):
+    """ Train the specified machine learning model "arg" on the training set, and then apply on the test set to make predictions, check for its accuracy, precision and recall scores, and append the metric scores to existing dictionaries.
+    
+    Args:
+        arg: a variable that holds an instance of the function call of a specified machine learning model.
+        
+    Returns:
+        An instance of itself
+        
+    """
+    arg.fit(x_train, y_train)
+    arg_pred = arg.predict(x_test)
+    arg_acc = accuracy_score(y_test, arg_pred)
+    arg_prec = precision_score(y_test,arg_pred)
+    arg_rec = recall_score(y_test,arg_pred)
+    accuracy_dict.update({'{}'.format(arg): 100*arg_acc})
+    precision_dict.update({'{}'.format(arg): 100*arg_prec})
+    recall_dict.update({'{}'.format(arg): 100*arg_rec})
+    
+    pass
+  
+```
+
+
+```{python}
+#Logistic Regression
+
+log_reg = LogisticRegression(max_iter = 1000)
+model(log_reg)
+
+#Support Vector Machine
+svc = SVC()
+model(svc)
+
+#K Neighbours Classifier
+
+knn = KNeighborsClassifier()
+model(knn)
+
+#Decision Tree Classifier
+dt = DecisionTreeClassifier()
+model(dt) 
+
+#RandomForestClassifier
+r = RandomForestClassifier()
+model(r)
+
+#GradientBoostingClassifier
+gb = GradientBoostingClassifier()
+model(gb)
+
+```
+
+
+The following is just to create a dictionary of each model as the key and its metrics as the values
+```{python}
+indices = [0,1,2,3,4,5]
+
+dictlist = [accuracy_dict,precision_dict,recall_dict]
+
+models = list(accuracy_dict.keys())
+
+val = []
+for item in dictlist:
+    val.append(list(item.values()))
+  
+metrics = [[],[],[],[],[],[]]
+
+for ind in indices:
+    for it in val:
+        metrics[ind].append(it[ind])
+        
+model_dict = dict(zip(models,metrics)) 
+print(model_dict)
+```
+
+Converting the dictionary into a dataframe for better visual exploration of models and their metrics. 
+```{python}
+
+df= pd.DataFrame.from_dict(model_dict, orient = 'index', columns= ["Accuracy","Precision","Recall"])
+df = df.reset_index(level=0)
+
+df
+
+#Graphs of Model Metrics
+
+fig1 = px.bar(df, x= "index", y = "Accuracy", title = "Accuracy of the ML models", labels = {'index':'ML models'}, text_auto=True)
+fig1.show()
+
+fig2 =  px.bar(df, x= "index", y = "Precision", title = "Precision of the ML models", labels = {'index':'ML models'}, text_auto=True)
+fig2.show()
+
+fig3 = px.bar(df, x= "index", y = "Recall", title = "Recall of the ML models", labels = {'index':'ML models'}, text_auto=True)
+fig3.show()
+
+```
 
