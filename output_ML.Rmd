@@ -42,6 +42,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+from mlxtend.feature_selection import SequentialFeatureSelector as SFS 
 
 ``` 
 
@@ -91,7 +92,10 @@ genfig.show()
 
 ### Pre-selection of Features and Feature Engineering
 
-We are closer to our goal of comparing the performance of various ML models on the dataset. Features here are pre-selected based on domain knowledge. Next, some feature engineering with Synthetic Minority Oversampling Technique (SMOTE). SMOTE utilizes a k-nearest neighbour algorithm helps to overcome the overfitting problem posed by random oversampling.In our dataset, the proportion of "No" examples for our outcome variable is much higher than "Yes" examples. Thus, there is the danger of our ML algorithms being biased if trained on this data as they would have way more "No" examples to learn from. I chose SMOTE instead of Random undersampling of the majority class because I want to preserve the data and not eliminate any examples since I do not have much training data to begin with!
+We are closer to our goal of comparing the performance of various ML models on the dataset. Features here are pre-selected based on domain knowledge.First, let us check our outcome variable. In our dataset, the proportion of "No" examples for our outcome variable is much higher than "Yes" examples. The main challenge with imbalanced dataset prediction is how accurately the ML model would predict both majority and minority classes. Thus, there is the danger of our ML algorithms being biased if trained on this data as they would have way more "No" examples to learn from. 
+
+We would solve this imbalance with some some feature engineering with Synthetic Minority Oversampling Technique (SMOTE). SMOTE utilizes a k-nearest neighbour algorithm helps to overcome the overfitting problem that might occur if we use random oversampling.
+I chose SMOTE instead of Random undersampling of the majority class because I want to preserve the data and not eliminate any examples since I do not have much training data to begin with!
 
 ```{python}
 Features = ['age','anaemia','creatinine_phosphokinase', 'diabetes',
@@ -136,5 +140,18 @@ sns.heatmap(cor)
 ``` 
 There is no collinearity amongst the variables.
 
+Now, we're going to use SequentialFeatureSelector(SFS) from the mlxtend library, which is a Python library of data science tools. SFS is a greedy procedure where, at each iteration, we choose the best new feature to add to our selected features based on a cross-validation score. For forward selection, we start with 0 features and choose the best single feature with the highest score. The procedure is repeated until we reach the desired number of selected features. We will use the “best” option, where the selector returns the feature subset with the best cross-validation performance.
+
+#### Sequential Forward Selection
+```{python}
+sfs = SFS(LogisticRegression(max_iter = 1000), #the default max_iter of 100 was not enough for the algorithm to converge
+          k_features= 'best', 
+          forward=True, 
+          scoring = 'accuracy')
+          
+sfs.fit(x,y)
+sfs.k_feature_names_
+
+```
 
 
