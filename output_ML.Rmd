@@ -71,6 +71,7 @@ group_labels = ['age']
 agedist = ff.create_distplot(hist_data, group_labels,show_rug=False, colors=['#37AA9C'])
 agedist.update_layout(title_text = 'Age Distribution of Dataset')
 #py.plot(agedist, filename = "agedist.html", auto_open=False)
+#agedist.show()
 
 ```
 
@@ -111,10 +112,16 @@ traindata.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training 
 ```
 
 ```{python}
-smote = SMOTE(sampling_strategy = 'minority')
-x_SMOTE, y_SMOTE = smote.fit_resample(x,y)
+x_train,x_test,y_train,y_test = train_test_split(x,y, test_size=0.2,shuffle=False)
 
-#Visualization of training data after sampling technique
+#We apply SMOTE only on the training set because we want the test set to not have any synthetic data (to be as it was taken from the real world)
+
+smote = SMOTE(sampling_strategy = 'minority', random_state = 2)
+x_SMOTE, y_SMOTE = smote.fit_resample(x_train,y_train)
+
+#from my checks, the same dataset is returned when smote is run. same scenario for train_test_split because of the arguments i've set.
+
+# Visualization of training data after sampling technique
 traindata_sampled = px.histogram(y_SMOTE, x= "DEATH_EVENT", text_auto=True)
 traindata_sampled.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset after Sampling")
 
@@ -168,8 +175,8 @@ We will go with the features selected from the SMOTE-transformed data.
 ```{python}
 
 x_SMOTE  = x_SMOTE[list(sfs.k_feature_names_)]
+x_test = x_test[list(sfs.k_feature_names_)]
 
-x_train,x_test,y_train,y_test = train_test_split(x_SMOTE,y_SMOTE, test_size=0.2, random_state=2)
 accuracy_dict = {}
 precision_dict = {}
 recall_dict = {}
@@ -184,7 +191,8 @@ def model(arg):
         An instance of itself
         
     """
-    arg.fit(x_train, y_train)
+    
+    arg.fit(x_SMOTE, y_SMOTE)
     arg_pred = arg.predict(x_test)
     arg_acc = accuracy_score(y_test, arg_pred)
     arg_prec = precision_score(y_test,arg_pred)
@@ -271,3 +279,14 @@ fig3.show()
 
 ```
 
+From the above, how do we choose the best model for this problem?
+
+Let's use the metrics of the logistic regression for example:
+
+Accuracy: 
+
+Precision: 
+
+Recall: A recall of 69.77% means it accurately identifies 69.77% of all those who died of heart failure.
+
+#How to set SMOTE so the model metrics are he same everytime the script is run.
