@@ -13,29 +13,17 @@ library(reticulate)
 ```{python}
 import numpy as np
 import pandas as pd
-import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.offline as py
-import plotly.graph_objects as go
 import plotly.express as px
-import plotly.io as pio 
-import lightgbm as lgb
 import plotly.figure_factory as ff
 
-from colorama import Fore, Back, Style  #for formatting the output font of printed texts
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, precision_score,recall_score
-from mlxtend.plotting import plot_confusion_matrix
-from plotly.offline import plot, iplot, init_notebook_mode
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
-from statsmodels.formula.api import ols
-import plotly.graph_objs as gobj
- 
+from sklearn.metrics import accuracy_score, precision_score,recall_score
+
 from imblearn.over_sampling import SMOTE
-import xgboost
 from sklearn.svm import SVC
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -91,23 +79,20 @@ genfig = px.pie(gendist, values = 'sex', names='index', title  = "Gender Distrib
 genfig.show()
 ```
 
-### Pre-selection of Features and Feature Engineering
+### Feature Engineering
 
-We are closer to our goal of comparing the performance of various ML models on the dataset. Features here are pre-selected based on domain knowledge.First, let us check our outcome variable. In our dataset, the proportion of "No" examples for our outcome variable is much higher than "Yes" examples. The main challenge with imbalanced dataset prediction is how accurately the ML model would predict both majority and minority classes. Thus, there is the danger of our ML algorithms being biased if trained on this data as they would have way more "No" examples to learn from. 
+We are closer to our goal of comparing the performance of various ML models on the dataset. First, let us check our outcome variable. In our dataset, the proportion of "No" examples for our outcome variable is much higher than "Yes" examples. The main challenge with imbalanced dataset prediction is how accurately the ML model would predict both majority and minority classes. Thus, there is the danger of our ML algorithms being biased if trained on this data as they would have way more "No" examples to learn from. 
 
 We would solve this imbalance with some some feature engineering with Synthetic Minority Oversampling Technique (SMOTE). SMOTE utilizes a k-nearest neighbour algorithm helps to overcome the overfitting problem that might occur if we use random oversampling.
 I chose SMOTE instead of Random undersampling of the majority class because I want to preserve the data and not eliminate any examples since I do not have much training data to begin with!
 
 ```{python}
-Features = ['age','anaemia','creatinine_phosphokinase', 'diabetes',
-            'ejection_fraction', 'serum_sodium', 'high_blood_pressure','smoking']
+Features = ['age','anaemia','creatinine_phosphokinase', 'diabetes','platelets',
+       'serum_creatinine', 'serum_sodium', 'sex', 'smoking',
+            'ejection_fraction','high_blood_pressure']
 
 x = data[Features]
 y = data["DEATH_EVENT"]
-
-#Visualization of training data before sampling technique
-traindata = px.histogram(y, x= "DEATH_EVENT", text_auto=True)
-traindata.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset")
 
 ```
 
@@ -119,12 +104,16 @@ x_train,x_test,y_train,y_test = train_test_split(x,y, test_size=0.2,shuffle=Fals
 smote = SMOTE(sampling_strategy = 'minority', random_state = 2)
 x_SMOTE, y_SMOTE = smote.fit_resample(x_train,y_train)
 
-#from my checks, the same dataset is returned when smote is run. same scenario for train_test_split because of the arguments i've set.
+
+#Visualization of training data before sampling technique
+traindata = px.histogram(y_train, x= "DEATH_EVENT", color = "DEATH_EVENT", labels= {"DEATH_EVENT" : "DIED OF HEART FAILURE?, 1 = Yes. 0 = No."}, text_auto=True)
+traindata.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset")
 
 # Visualization of training data after sampling technique
-traindata_sampled = px.histogram(y_SMOTE, x= "DEATH_EVENT", text_auto=True)
+traindata_sampled = px.histogram(y_SMOTE, x= "DEATH_EVENT", color = "DEATH_EVENT", labels= {"DEATH_EVENT" : "DIED OF HEART FAILURE?, 1 = Yes. 0 = No."}, text_auto=True)
 traindata_sampled.update_layout(bargap=0.5, title_text= "Count of Outcomes for Training Dataset after Sampling")
 
+#traindata_sampled.show()
 ```
 
 ### Feature Selection
@@ -144,7 +133,7 @@ cor = x_SMOTE.corr()
 cor
 sns.heatmap(cor)
 ``` 
-There is no collinearity amongst the variables.
+There is no collinearity among the variables.
 
 Now, we're going to use SequentialFeatureSelector(SFS) from the mlxtend library, which is a Python library of data science tools. SFS is a greedy procedure where, at each iteration, we choose the best new feature to add to our selected features based on a cross-validation score. For forward selection, we start with 0 features and choose the best single feature with the highest score. The procedure is repeated until we reach the desired number of selected features. We will use the “best” option, where the selector returns the feature subset with the best cross-validation performance.
 
@@ -283,10 +272,19 @@ From the above, how do we choose the best model for this problem?
 
 Let's use the metrics of the logistic regression for example:
 
-Accuracy: 
+Accuracy: Calculates the overall proportion of correct predictions whether positive or negative.
+Top 3 based on Accuracy: GBC, KNN, SVC
 
-Precision: 
+Precision: Precision is a metric used to calculate the quality of positive predictions made by the model. It attempts to answer the question:
+What proportion of positive identifications was actually correct?/ How many of the returned hits were true positives: TP/(TP+FP) Thus a model that produces no false +ves has a precision of 1.0
+Top three: GBC, KNN, SVC (poor overall though)
 
-Recall: A recall of 69.77% means it accurately identifies 69.77% of all those who died of heart failure.
+Recall: Recall  is a metric used to calculate how many of the true positives were recalled(found). It attempts to answer the question: 
+What proportion of actual positives was identified correctly?: TP/(TP+FN) Thus a model that produces no false negatives has a recall of 1.0.
+ A recall of 69.77% means it accurately identifies 69.77% of all those who died of heart failure.
+Top three: SVC, GBC, KNN, logreg
 
-#How to set SMOTE so the model metrics are he same everytime the script is run.
+From the results, the support vector machine correctly identifies all who died of heart failure, based on it's recall score. However, it's precision, though in the top three for this problem, is still poor. That means, a high number of those who did not die of heart failure were tagged by the model as having died of heart failure. This model got all those who died of heart failure correctly, but included many of those who didn't as well.
+
+From a medical viewpoint,if we could not get any better, we would probably go with this model since we would rather not miss anyone who would die of heart failure if an intervention is not made. It seems to be the best of the options we have here. Thus we would raher err on the side o caution even if it includes those who would not die of heart failure. For real-world use though, this model is not strong enough because of it's poor precision.
+
