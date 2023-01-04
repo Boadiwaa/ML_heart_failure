@@ -1,0 +1,6 @@
+Enter the age of the patient,Does patient have Anaemia?,Enter level of CPK enzyme (mcg),Does patient have Diabetes Mellitus (DM),Enter level of serum creatinine (mg),Enter ejection fraction (%),Heart Failure Risk:,flag,username,timestamp
+40,No Anaemia,23,No DM,0.5,80,Patient is at high risk of dying from heart failure,clinical suspicion is low for heart failure but model says otherwise,,2023-01-04 01:05:23.669526
+40,No Anaemia,23,No DM,0.5,80,Patient is at high risk of dying from heart failure,clinical suspicion is low for heart failure but model says otherwise,,2023-01-04 01:05:26.293978
+40,No Anaemia,23,No DM,0.5,80,Patient is at high risk of dying from heart failure,clinical suspicion is low for heart failure but model says otherwise,,2023-01-04 01:05:29.574623
+40,No Anaemia,23,No DM,0.5,80,Patient is at high risk of dying from heart failure,clinical suspicion is low for heart failure but model says otherwise,,2023-01-04 01:05:31.546521
+,,,,,,,clinical suspicion is low for heart failure but model says otherwise,,2023-01-04 01:05:36.083167
