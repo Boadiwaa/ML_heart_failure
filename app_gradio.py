@@ -21,10 +21,9 @@ Features = list(('age', 'serum_creatinine','ejection_fraction'))
 x = data[Features]
 y = data["DEATH_EVENT"]
 
-x_train,x_test,y_train,y_test = train_test_split(x,y, test_size=0.2,shuffle=False)
 
 smote = SMOTE(sampling_strategy = 'minority', random_state = 2)
-x_SMOTE, y_SMOTE = smote.fit_resample(x_train,y_train)
+x_SMOTE, y_SMOTE = smote.fit_resample(x,y)
 
 svc = SVC()
 
@@ -70,8 +69,8 @@ with gr.Blocks(css = ".gradio-container {background-color: #10217d} #md {width: 
                                               #css = " div {background-color: red}",
                                               #title = "Heart Failure Predictor")
     gr.Markdown("""
-                ## <span style="color:#d7baad">Input Examples</span>
-                <span style="color:#d7baad">Click on the examples below for a demo of how the app runs.</span>
+                ## <span style="color:#527c88">Input Examples</span>
+                <span style="color:#89dee2">Click on the examples below for a demo of how the app runs.</span>
                 """)
     gr.Examples(
         [[49, 1, 30], [65,2.7,30]],
