@@ -7,7 +7,6 @@ Created on Tue Jan  3 18:57:20 2023
 
 import pandas as pd
 import pickle
-from sklearn.model_selection import train_test_split
 #from sklearn.metrics import accuracy_score, precision_score,recall_score
 from sklearn.svm import SVC
 from imblearn.over_sampling import SMOTE
